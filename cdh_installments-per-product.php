@@ -8,7 +8,7 @@
  * License: GPL-2.0+
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain: cdh_installments_per_product_using_pagarme
- * Version: 2.0.0
+ * Version: 2.0.1
  *
  * License: GNU General Public License v3.0
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -50,7 +50,7 @@ function cdh_get_installments_per_product($product){
     }
 
     $output = '<div id="installments">';
-    
+
     /**
      * PIX HTML
      */
@@ -69,9 +69,9 @@ function cdh_get_installments_per_product($product){
 
         $free_installments = $credit_card_configuration['cc_installments_without_interest'];
         $max_installment = $credit_card_configuration['cc_installments_maximum'];
-        $interest_rate = $credit_card_configuration['cc_installments_interest'];
+        $interest_rate_increase = $credit_card_configuration['cc_installments_interest_increase'];
         $smallest_installment  = $credit_card_configuration['cc_installments_min_amount'];
-        
+
         if ( $product->is_type( 'variable' ) ) {
             $prices = $product->get_variation_prices( true );
             $product_price = current( $prices['price'] ); //min_price
@@ -80,34 +80,33 @@ function cdh_get_installments_per_product($product){
         }
 
         $hasFreeInstallments = false;
-        for($max_installments_without_fess=$free_installments; $max_installments_without_fess>0; $max_installments_without_fess--){
-            $installments_value = round($product_price / $max_installments_without_fess, 2);
+        for($max_installments_without_fees=$free_installments; $max_installments_without_fees>0; $max_installments_without_fees--){
+            $installments_value = round($product_price / $max_installments_without_fees, 2);
             if( $installments_value >= $smallest_installment){
-                $output .= 'Parcele em até <span class="intallments-product">'.$max_installments_without_fess.'x R$'.number_format((float)$installments_value, 2, ',', '').' sem juros</span> <br>';
+                $output .= 'Parcele em até <span class="intallments-product">'.$max_installments_without_fees.'x R$'.number_format((float)$installments_value, 2, ",", "").' sem juros</span> <br>';
                 $hasFreeInstallments = true;
                 break;
             }
         }
 
-        if(!$hasFreeInstallments){ // no have installmenst then is 1x without fees
-            $output .= 'ou em <span class="intallments-product">1x R$'.number_format((float)$product_price, 2, ',', '').' sem juros</span>';
+        if(!$hasFreeInstallments){ // no have installments then is 1x without fees
+            $output .= 'ou em <span class="intallments-product">1x R$'.number_format((float)$product_price, 2, ",", "").' sem juros</span>';
         }
-        
-        $interest_rate_with_comma = str_replace(".", "", $interest_rate);
-        $interest_rate_without_comma = str_replace(",", ".", $interest_rate_with_comma);
-        for($max_installments_with_fess = $max_installment; $max_installments_with_fess>0; $max_installments_with_fess--){
-            $installments_value = round($product_price / $max_installments_with_fess, 2);
+
+        for($max_installments_with_fees = $max_installment; $max_installments_with_fees>0; $max_installments_with_fees--){
+            $installments_value = round($product_price / $max_installments_with_fees, 2);
             //will only show the installment with interest if the installment with interest is greater than the installment without interest
-            if( $installments_value >= $smallest_installment && $max_installments_with_fess > $max_installments_without_fess){
-                $value_with_fees = (($product_price * ($max_installments_with_fess * $interest_rate_without_comma) / 100) + $product_price) / $max_installments_with_fess;
-                $installments_value_with_fees = round($value_with_fees, 2);
-                $output .= 'ou em até <span class="intallments-product-fees">'.$max_installments_with_fess.'x R$'.number_format((float)$installments_value_with_fees, 2, ',', '').'</span> <br>';
+            if( $installments_value >= $smallest_installment && $max_installments_with_fees > $max_installments_without_fees){
+                $interest_rate = ($max_installments_with_fees - $free_installments) * $interest_rate_increase;
+                $value_with_fees = (($product_price * ($interest_rate / 100)) + $product_price ) / $max_installments_with_fees;
+                $installments_value_with_fees = ceil($value_with_fees * 100) / 100;
+
+                $output .= 'ou em até <span class="intallments-product-fees">'.$max_installments_with_fees.'x R$'.number_format((float)$installments_value_with_fees, 2, ",", "").'</span> <br>';
                 break;
             }
         }
     }
 
     $output .= '</div>';
-
     return $output;
 }
