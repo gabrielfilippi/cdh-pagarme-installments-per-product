@@ -32,7 +32,7 @@ function cdh_add_installments_after_price_html($price){
         $product = wc_get_product( get_the_id() );
     }
     
-    if ( is_a($product, 'WC_Product') && !$product->is_type('composite') && $product->get_price() !== "" && $product->get_price() !== null && $product->get_price() !== 0 && $product->get_price()) {
+    if ( is_a($product, 'WC_Product') && !$product->is_type(array('composite', 'subscription', 'subscription_variation', 'variable-subscription')) && $product->get_price() !== "" && $product->get_price() !== null && $product->get_price() !== 0 && $product->get_price() ) {
         $installments = cdh_get_installments_per_product($product);
         return $price . "<br>" . $installments;
     }else {
