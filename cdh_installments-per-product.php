@@ -8,7 +8,7 @@
  * License: GPL-2.0+
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain: cdh_installments_per_product_using_pagarme
- * Version: 2.1.1
+ * Version: 2.1.2
  *
  * License: GNU General Public License v3.0
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -24,19 +24,18 @@ function cdh_installments_on_product_css(){
 	wp_enqueue_style('cdh_installments_product');
 }
 
-add_filter( 'woocommerce_get_price_html', 'cdh_add_installments_after_price_html' );
-function cdh_add_installments_after_price_html($price){
-    global $product;
+add_filter( 'woocommerce_get_price_html', 'cdh_add_installments_after_price_html', 9999, 2);
+function cdh_add_installments_after_price_html($price_html, $product){
 
     if ( ! is_a($product, 'WC_Product') ) {
         $product = wc_get_product( get_the_id() );
     }
-    
-    if ( is_a($product, 'WC_Product') && !$product->is_type(array('composite', 'subscription', 'subscription_variation', 'variable-subscription')) && $product->get_price() !== "" && $product->get_price() !== null && $product->get_price() !== 0 && $product->get_price() ) {
+
+    if ( is_a($product, 'WC_Product') && !$product->is_type(array('composite', 'subscription', 'subscription_variation', 'variable-subscription')) && $product->get_price() ) {
         $installments = cdh_get_installments_per_product($product);
-        return $price . "<br>" . $installments;
+        return $price_html . "<br>" . $installments;
     }else {
-        return $price;
+        return $price_html;
     }
 }
 
@@ -73,10 +72,37 @@ function cdh_get_installments_per_product($product){
         $smallest_installment  = $credit_card_configuration['cc_installments_min_amount'];
 
         if ( $product->is_type( 'variable' ) ) {
-            $prices = $product->get_variation_prices( true );
-            $product_price = current( $prices['price'] ); //min_price
+            $discount_details = []; 
+            $original_prices_list = []; 
+            // Loop through variations and collect prices
+            foreach ($product->get_children() as $variation_id) {
+                $variation = wc_get_product($variation_id);
+
+                // Skip variations without stock
+                if (!Wdr\App\Helpers\Woocommerce::isProductHasStock($variation)) {
+                    continue;
+                }
+
+                // Get discount details for the variation
+                $discount_details_from_filter = apply_filters('advanced_woo_discount_rules_get_product_discount_details', false, $variation);
+
+                if ($discount_details_from_filter) {
+                    $original_prices_list[] = $discount_details_from_filter['initial_price'] ?? 0;
+                    if (isset($discount_details_from_filter['discounted_price'])) {
+                        $discount_details[] = $discount_details_from_filter['discounted_price'];
+                    }
+                }
+            }
+
+            // Update the price range display if we have price data
+            if ($discount_details && $original_prices_list) {
+                $product_price = min($discount_details);
+            }else{
+                return '';
+            }
+
         }else{
-            $product_price = $product->get_price();
+            $product_price = apply_filters('advanced_woo_discount_rules_get_product_discount_price', $product->get_regular_price(), $product);
         }
 
         $hasFreeInstallments = false;
