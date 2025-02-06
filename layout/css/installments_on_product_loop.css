@@ -12,6 +12,10 @@
     align-items: center;
 }
 
+.live-search-list #installments {
+    display: none !important;
+}
+
 .single-product #installments{
     font-size: 1em;
 }

@@ -8,7 +8,7 @@
  * License: GPL-2.0+
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain: cdh_installments_per_product_using_pagarme
- * Version: 2.1.2
+ * Version: 2.1.3
  *
  * License: GNU General Public License v3.0
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
